@@ -55,7 +55,7 @@ $(FIELDS)
     "Flag to save the search tree and frontier in the returned solution."
     save_search::Bool = false
     "Flag to save the node expansion order in the returned solution."
-    save_search_order::Bool = false
+    save_search_order::Bool = true
 end
 
 @auto_hash ForwardPlanner
@@ -154,22 +154,31 @@ end
 function solve(planner::ForwardPlanner,
                domain::Domain, state::State, spec::Specification)
     @unpack h_mult, heuristic, save_search = planner
+    
     # Simplify goal specification
     spec = simplify_goal(spec, domain, state)
+    
     # Precompute heuristic information
     precompute!(heuristic, domain, state, spec)
+    
     # Initialize search tree and priority queue
     node_id = hash(state)
     search_tree = Dict(node_id => PathNode(node_id, state, 0.0))
+    
     est_cost::Float32 = h_mult * compute(heuristic, domain, state, spec)
+    
     priority = (est_cost, est_cost, 0)
+    
     queue = PriorityQueue(node_id => priority)
+    
     search_order = UInt[]
+    
     sol = PathSearchSolution(:in_progress, Term[], Vector{typeof(state)}(),
                              0, search_tree, queue, search_order)
     # Run the search
     sol = search!(sol, planner, domain, spec)
     # Return solution
+    
     if save_search
         return sol
     elseif sol.status == :failure
@@ -187,10 +196,12 @@ function search!(sol::PathSearchSolution, planner::ForwardPlanner,
     queue, search_tree = sol.search_frontier, sol.search_tree
     while length(queue) > 0
         # Get state with lowest estimated cost to goal
+    
         node_id, _ = isnothing(search_noise) ?
             peek(queue) : prob_peek(queue, search_noise)
         node = search_tree[node_id]
         # Check search termination criteria
+    
         if is_goal(spec, domain, node.state)
             sol.status = :success # Goal reached
         elseif sol.expanded >= planner.max_nodes
