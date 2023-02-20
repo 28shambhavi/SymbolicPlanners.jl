@@ -53,7 +53,7 @@ $(FIELDS)
     "Maximum time in seconds before planner times out."
     max_time::Float64 = Inf
     "Flag to save the search tree and frontier in the returned solution."
-    save_search::Bool = false
+    save_search::Bool = true
     "Flag to save the node expansion order in the returned solution."
     save_search_order::Bool = true
 end
